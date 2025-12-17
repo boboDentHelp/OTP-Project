@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proiect Criptografie - One-Time Pad & Algoritmi Criptografici</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <span class="lock-icon">🔐</span>
+            <span>CryptoLab</span>
+        </div>
+        <div class="nav-links">
+            <a href="#otp" class="nav-link active">OTP</a>
+            <a href="#caesar" class="nav-link">Caesar</a>
+            <a href="#vigenere" class="nav-link">Vigenère</a>
+            <a href="#aes" class="nav-link">AES</a>
+            <a href="#hash" class="nav-link">Hash</a>
+            <a href="#theory" class="nav-link">Teorie</a>
+        </div>
+    </nav>
+
+    <main class="container">
+        <header class="hero">
+            <h1>Laboratorul de Criptografie</h1>
+            <p>Explorarea algoritmilor criptografici: One-Time Pad, Caesar, Vigenère, AES și funcții hash</p>
+        </header>
+
+        <!-- OTP Section -->
+        <section id="otp" class="crypto-section">
+            <div class="section-header">
+                <h2>🔑 One-Time Pad (OTP)</h2>
+                <span class="security-badge perfect">Securitate Perfectă</span>
+            </div>
+            <div class="section-description">
+                <p>One-Time Pad este singurul sistem criptografic demonstrat matematic ca având <strong>securitate perfectă</strong> (Shannon, 1949). Condiții: cheia trebuie să fie complet aleatorie, de aceeași lungime cu mesajul, și folosită o singură dată.</p>
+            </div>
+            <div class="crypto-card">
+                <div class="input-group">
+                    <label for="otp-message">Mesaj</label>
+                    <textarea id="otp-message" placeholder="Introduceți mesajul de criptat sau decriptat..."></textarea>
+                </div>
+                <div class="input-group">
+                    <label for="otp-key">Cheie (hex) - lăsați gol pentru generare automată la criptare</label>
+                    <input type="text" id="otp-key" placeholder="Cheia în format hexadecimal...">
+                </div>
+                <div class="button-group">
+                    <button onclick="otpEncrypt()" class="btn btn-primary">Criptează</button>
+                    <button onclick="otpDecrypt()" class="btn btn-secondary">Decriptează</button>
+                </div>
+                <div class="result-group">
+                    <label>Rezultat</label>
+                    <div id="otp-result" class="result-box"></div>
+                </div>
+                <div class="result-group" id="otp-key-display" style="display: none;">
+                    <label>Cheie Generată (hex)</label>
+                    <div id="otp-generated-key" class="result-box key-box"></div>
+                    <button onclick="copyKey('otp-generated-key')" class="btn btn-small">Copiază Cheia</button>
+                </div>
+            </div>
+
+            <!-- XOR Analysis Demo -->
+            <div class="crypto-card demo-card">
+                <h3>⚠️ Demonstrație: Pericolul Reutilizării Cheii</h3>
+                <p class="warning-text">Aceasta demonstrează de ce cheia OTP nu trebuie folosită niciodată de două ori.</p>
+                <div class="input-group">
+                    <label for="xor-cipher1">Mesaj criptat 1 (hex)</label>
+                    <input type="text" id="xor-cipher1" placeholder="Prima criptogramă...">
+                </div>
+                <div class="input-group">
+                    <label for="xor-cipher2">Mesaj criptat 2 (hex)</label>
+                    <input type="text" id="xor-cipher2" placeholder="A doua criptogramă...">
+                </div>
+                <button onclick="analyzeXOR()" class="btn btn-warning">Analizează XOR</button>
+                <div id="xor-result" class="result-box"></div>
+            </div>
+        </section>
+
+        <!-- Caesar Section -->
+        <section id="caesar" class="crypto-section">
+            <div class="section-header">
+                <h2>📜 Cifrul Caesar</h2>
+                <span class="security-badge weak">Securitate Slabă</span>
+            </div>
+            <div class="section-description">
+                <p>Unul dintre cele mai vechi și simple cifruri de substituție. Fiecare literă este deplasată cu un număr fix de poziții în alfabet. Vulnerabil la atacuri de forță brută (doar 25 de chei posibile) și analiză de frecvență.</p>
+            </div>
+            <div class="crypto-card">
+                <div class="input-group">
+                    <label for="caesar-message">Mesaj</label>
+                    <textarea id="caesar-message" placeholder="Introduceți mesajul..."></textarea>
+                </div>
+                <div class="input-group">
+                    <label for="caesar-shift">Deplasare (0-25)</label>
+                    <input type="number" id="caesar-shift" min="0" max="25" value="3">
+                    <input type="range" id="caesar-shift-slider" min="0" max="25" value="3" oninput="document.getElementById('caesar-shift').value = this.value">
+                </div>
+                <div class="button-group">
+                    <button onclick="caesarEncrypt()" class="btn btn-primary">Criptează</button>
+                    <button onclick="caesarDecrypt()" class="btn btn-secondary">Decriptează</button>
+                    <button onclick="caesarBruteForce()" class="btn btn-accent">Forță Brută</button>
+                </div>
+                <div class="result-group">
+                    <label>Rezultat</label>
+                    <div id="caesar-result" class="result-box"></div>
+                </div>
+                <div class="result-group" id="caesar-brute-force" style="display: none;">
+                    <label>Toate variantele posibile:</label>
+                    <div id="caesar-all-results" class="result-box brute-force-results"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Vigenère Section -->
+        <section id="vigenere" class="crypto-section">
+            <div class="section-header">
+                <h2>🔤 Cifrul Vigenère</h2>
+                <span class="security-badge moderate">Securitate Moderată</span>
+            </div>
+            <div class="section-description">
+                <p>O extensie a cifrului Caesar care folosește un cuvânt cheie. Fiecare literă din cheie determină deplasarea pentru litera corespunzătoare din mesaj. Rezistent la analiza simplă de frecvență, dar vulnerabil la atacuri de tip Kasiski și Friedman.</p>
+            </div>
+            <div class="crypto-card">
+                <div class="input-group">
+                    <label for="vigenere-message">Mesaj</label>
+                    <textarea id="vigenere-message" placeholder="Introduceți mesajul..."></textarea>
+                </div>
+                <div class="input-group">
+                    <label for="vigenere-key">Cheie (cuvânt)</label>
+                    <input type="text" id="vigenere-key" placeholder="Introduceți cheia...">
+                </div>
+                <div class="button-group">
+                    <button onclick="vigenereEncrypt()" class="btn btn-primary">Criptează</button>
+                    <button onclick="vigenereDecrypt()" class="btn btn-secondary">Decriptează</button>
+                </div>
+                <div class="result-group">
+                    <label>Rezultat</label>
+                    <div id="vigenere-result" class="result-box"></div>
+                </div>
+            </div>
+
+            <!-- Vigenère Table -->
+            <div class="crypto-card">
+                <h3>Tabela Vigenère</h3>
+                <div id="vigenere-table" class="vigenere-table-container"></div>
+            </div>
+        </section>
+
+        <!-- AES Section -->
+        <section id="aes" class="crypto-section">
+            <div class="section-header">
+                <h2>🛡️ AES-256</h2>
+                <span class="security-badge strong">Securitate Puternică</span>
+            </div>
+            <div class="section-description">
+                <p>Advanced Encryption Standard (AES) este standardul actual pentru criptarea simetrică. Folosit de guverne și organizații din întreaga lume. Implementarea noastră folosește AES-256 în modul CBC cu padding PKCS7.</p>
+            </div>
+            <div class="crypto-card">
+                <div class="input-group">
+                    <label for="aes-message">Mesaj / Text criptat</label>
+                    <textarea id="aes-message" placeholder="Introduceți mesajul pentru criptare sau format IV:Ciphertext pentru decriptare..."></textarea>
+                </div>
+                <div class="input-group">
+                    <label for="aes-key">Parolă / Cheie (lăsați gol pentru generare automată)</label>
+                    <input type="text" id="aes-key" placeholder="Parola sau cheia în Base64...">
+                </div>
+                <div class="button-group">
+                    <button onclick="aesEncrypt()" class="btn btn-primary">Criptează</button>
+                    <button onclick="aesDecrypt()" class="btn btn-secondary">Decriptează</button>
+                </div>
+                <div class="result-group">
+                    <label>Rezultat</label>
+                    <div id="aes-result" class="result-box"></div>
+                </div>
+                <div class="result-group" id="aes-details" style="display: none;">
+                    <label>Detalii Criptare</label>
+                    <div id="aes-details-content" class="result-box details-box"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Hash Section -->
+        <section id="hash" class="crypto-section">
+            <div class="section-header">
+                <h2>#️⃣ Funcții Hash (SHA-256)</h2>
+                <span class="security-badge strong">One-Way Function</span>
+            </div>
+            <div class="section-description">
+                <p>Funcțiile hash transformă date de orice dimensiune într-o amprentă de dimensiune fixă. Sunt funcții unidirecționale - este imposibil din punct de vedere computațional să obții datele originale din hash. Utilizări: verificarea integrității, stocarea parolelor, semnături digitale.</p>
+            </div>
+            <div class="crypto-card">
+                <div class="input-group">
+                    <label for="hash-message">Text de hașurat</label>
+                    <textarea id="hash-message" placeholder="Introduceți textul..." oninput="updateHash()"></textarea>
+                </div>
+                <div class="result-group">
+                    <label>SHA-256 Hash (64 caractere hex = 256 biți)</label>
+                    <div id="hash-result" class="result-box hash-box"></div>
+                </div>
+                <div class="hash-properties">
+                    <h4>Proprietățile Funcțiilor Hash Criptografice:</h4>
+                    <ul>
+                        <li><strong>Determinism:</strong> Același input produce întotdeauna același output</li>
+                        <li><strong>Eficiență:</strong> Calculul hash-ului este rapid</li>
+                        <li><strong>Rezistență la preimage:</strong> Imposibil de găsit input-ul din hash</li>
+                        <li><strong>Rezistență la coliziuni:</strong> Imposibil de găsit două inputuri diferite cu același hash</li>
+                        <li><strong>Efect avalanșă:</strong> O mică schimbare în input produce un hash complet diferit</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Avalanche Effect Demo -->
+            <div class="crypto-card demo-card">
+                <h3>🌊 Demonstrație: Efectul Avalanșă</h3>
+                <div class="input-group">
+                    <label for="avalanche-text1">Text 1</label>
+                    <input type="text" id="avalanche-text1" value="Hello World" oninput="demonstrateAvalanche()">
+                </div>
+                <div class="input-group">
+                    <label for="avalanche-text2">Text 2 (schimbați o literă)</label>
+                    <input type="text" id="avalanche-text2" value="Hello World!" oninput="demonstrateAvalanche()">
+                </div>
+                <div id="avalanche-result" class="avalanche-comparison"></div>
+            </div>
+        </section>
+
+        <!-- Theory Section -->
+        <section id="theory" class="crypto-section">
+            <div class="section-header">
+                <h2>📚 Fundamente Teoretice</h2>
+            </div>
+
+            <div class="theory-grid">
+                <div class="theory-card">
+                    <h3>🔐 One-Time Pad</h3>
+                    <div class="formula">C = M ⊕ K</div>
+                    <div class="formula">M = C ⊕ K</div>
+                    <p>Unde C = text cifrat, M = mesaj, K = cheie, ⊕ = XOR</p>
+                    <h4>Condiții pentru securitate perfectă:</h4>
+                    <ul>
+                        <li>Cheia trebuie să fie complet aleatorie</li>
+                        <li>Cheia trebuie să aibă cel puțin lungimea mesajului</li>
+                        <li>Cheia nu trebuie refolosită niciodată</li>
+                        <li>Cheia trebuie păstrată secretă</li>
+                    </ul>
+                </div>
+
+                <div class="theory-card">
+                    <h3>📜 Cifrul Caesar</h3>
+                    <div class="formula">E(x) = (x + k) mod 26</div>
+                    <div class="formula">D(x) = (x - k) mod 26</div>
+                    <p>Unde x = poziția literei, k = deplasarea</p>
+                    <h4>Vulnerabilități:</h4>
+                    <ul>
+                        <li>Doar 25 de chei posibile</li>
+                        <li>Atacul de forță brută trivial</li>
+                        <li>Analiza de frecvență</li>
+                    </ul>
+                </div>
+
+                <div class="theory-card">
+                    <h3>🔤 Cifrul Vigenère</h3>
+                    <div class="formula">E(x,k) = (x + k) mod 26</div>
+                    <p>Unde k variază conform cheii</p>
+                    <h4>Caracteristici:</h4>
+                    <ul>
+                        <li>Cifru polialfabetic</li>
+                        <li>Mai rezistent decât Caesar</li>
+                        <li>Vulnerabil la atacul Kasiski</li>
+                        <li>Vulnerabil la testul Friedman</li>
+                    </ul>
+                </div>
+
+                <div class="theory-card">
+                    <h3>🛡️ AES (Rijndael)</h3>
+                    <div class="formula">128/192/256 biți cheie</div>
+                    <div class="formula">128 biți bloc</div>
+                    <h4>Structura rundei:</h4>
+                    <ul>
+                        <li>SubBytes - substituție neliniară</li>
+                        <li>ShiftRows - permutare</li>
+                        <li>MixColumns - difuzie</li>
+                        <li>AddRoundKey - XOR cu cheia rundei</li>
+                    </ul>
+                </div>
+
+                <div class="theory-card full-width">
+                    <h3>📊 Comparație Algoritmi</h3>
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Algoritm</th>
+                                <th>Tip</th>
+                                <th>Securitate</th>
+                                <th>Viteză</th>
+                                <th>Utilizare</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>OTP</td>
+                                <td>Simetric (Stream)</td>
+                                <td>Perfectă (teoretic)</td>
+                                <td>Foarte rapidă</td>
+                                <td>Comunicații ultra-secrete</td>
+                            </tr>
+                            <tr>
+                                <td>Caesar</td>
+                                <td>Substituție</td>
+                                <td>Foarte slabă</td>
+                                <td>Instantaneu</td>
+                                <td>Educațional</td>
+                            </tr>
+                            <tr>
+                                <td>Vigenère</td>
+                                <td>Polialfabetic</td>
+                                <td>Slabă</td>
+                                <td>Rapidă</td>
+                                <td>Istoric/Educațional</td>
+                            </tr>
+                            <tr>
+                                <td>AES-256</td>
+                                <td>Simetric (Bloc)</td>
+                                <td>Foarte puternică</td>
+                                <td>Rapidă (hardware)</td>
+                                <td>Standard industrie</td>
+                            </tr>
+                            <tr>
+                                <td>SHA-256</td>
+                                <td>Hash</td>
+                                <td>Puternică</td>
+                                <td>Rapidă</td>
+                                <td>Integritate, parole</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>Proiect Criptografie - Securitatea Informațiilor</p>
+            <p>Implementare algoritmi: One-Time Pad, Caesar, Vigenère, AES-256, SHA-256</p>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
