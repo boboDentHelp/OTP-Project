@@ -65,7 +65,8 @@ OTP-Project/
 ## Instalare și Rulare
 
 ### Cerințe
-- Node.js 18+ (pentru frontend React)
+- **Go 1.21+** (pentru backend)
+- **Node.js 18+** (pentru frontend React)
 - Browser web modern (Chrome, Firefox, Edge)
 - LaTeX (opțional, pentru compilare documente)
 
@@ -76,17 +77,19 @@ OTP-Project/
 git clone <repository-url>
 cd OTP-Project
 
-# navigare in directorul frontend
+# 1. pornire backend go (intr-un terminal)
+cd backend
+go run main.go
+# server porneste pe http://localhost:8080
+
+# 2. pornire frontend react (in alt terminal)
 cd frontend-react
-
-# instalare dependente
 npm install
-
-# pornire server development
 npm run dev
-
-# deschide in browser: http://localhost:5173
+# frontend porneste pe http://localhost:5173
 ```
+
+**Important:** Backend-ul trebuie să ruleze pentru ca frontend-ul să funcționeze!
 
 ### Compilare Documentație LaTeX
 
