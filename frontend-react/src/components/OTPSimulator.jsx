@@ -142,28 +142,32 @@ function OTPSimulator() {
     })
   }, [message])
 
-  // functie pentru salvare in fisiere
-  const saveToFiles = useCallback(() => {
+  // functie pentru salvare fisier individual
+  const downloadFile = useCallback((content, filename) => {
+    const blob = new Blob([content], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }, [])
+
+  // salvare cheie
+  const saveKey = useCallback(() => {
     if (!results) return
+    const content = `OTP KEY (hex)\n${results.key.hex}\n\nLungime: ${results.key.bytes.length} bytes`
+    downloadFile(content, 'otp_cheie.txt')
+  }, [results, downloadFile])
 
-    // salvam cheia
-    const keyBlob = new Blob([results.key.hex], { type: 'text/plain' })
-    const keyUrl = URL.createObjectURL(keyBlob)
-    const keyLink = document.createElement('a')
-    keyLink.href = keyUrl
-    keyLink.download = 'otp_key.txt'
-    keyLink.click()
-    URL.revokeObjectURL(keyUrl)
-
-    // salvam mesajul criptat
-    const encBlob = new Blob([results.encrypted.hex], { type: 'text/plain' })
-    const encUrl = URL.createObjectURL(encBlob)
-    const encLink = document.createElement('a')
-    encLink.href = encUrl
-    encLink.download = 'encrypted_message.txt'
-    encLink.click()
-    URL.revokeObjectURL(encUrl)
-  }, [results])
+  // salvare mesaj criptat
+  const saveEncrypted = useCallback(() => {
+    if (!results) return
+    const content = `MESAJ CRIPTAT (hex)\n${results.encrypted.hex}\n\nMesaj original: "${results.original.text}"\nLungime: ${results.encrypted.bytes.length} bytes`
+    downloadFile(content, 'mesaj_criptat.txt')
+  }, [results, downloadFile])
 
   return (
     <div className="space-y-6">
@@ -194,13 +198,22 @@ function OTPSimulator() {
             🔐 cripteaza / decripteaza
           </button>
           {results && (
-            <button
-              onClick={saveToFiles}
-              className="px-6 py-3 bg-slate-800 hover:bg-slate-700 rounded-lg
-                         font-medium transition-colors border border-slate-600"
-            >
-              💾 salveaza fisiere
-            </button>
+            <>
+              <button
+                onClick={saveKey}
+                className="px-4 py-3 bg-amber-900/50 hover:bg-amber-800/50 rounded-lg
+                           font-medium transition-colors border border-amber-700 text-amber-300"
+              >
+                🔑 salveaza cheie
+              </button>
+              <button
+                onClick={saveEncrypted}
+                className="px-4 py-3 bg-cyan-900/50 hover:bg-cyan-800/50 rounded-lg
+                           font-medium transition-colors border border-cyan-700 text-cyan-300"
+              >
+                🔒 salveaza criptat
+              </button>
+            </>
           )}
         </div>
       </div>
