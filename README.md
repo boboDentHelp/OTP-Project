@@ -1,6 +1,6 @@
-# Proiect Criptografie: One-Time Pad și Algoritmi Criptografici
+# Simulare One-Time Pad (OTP)
 
-Acest proiect demonstrează implementarea și analiza algoritmilor criptografici, cu accent pe **One-Time Pad (OTP)** - singurul sistem criptografic cu securitate perfectă demonstrată matematic.
+Proiect de criptografie care demonstrează implementarea algoritmului **One-Time Pad** - singurul sistem criptografic cu securitate perfectă demonstrată matematic de Claude Shannon în 1949.
 
 ## Cuprins
 
@@ -8,98 +8,84 @@ Acest proiect demonstrează implementarea și analiza algoritmilor criptografici
 - [Funcționalități](#funcționalități)
 - [Structura Proiectului](#structura-proiectului)
 - [Instalare și Rulare](#instalare-și-rulare)
-- [Algoritmi Implementați](#algoritmi-implementați)
+- [Cum Funcționează OTP](#cum-funcționează-otp)
 - [Documentație](#documentație)
-- [Capturi de Ecran](#capturi-de-ecran)
 - [Tehnologii](#tehnologii)
-- [Bibliografie](#bibliografie)
 
 ## Descriere
 
-Proiectul explorează mai mulți algoritmi criptografici prin intermediul unei aplicații web interactive:
-
-- **Cifruri Clasice**: Caesar, Vigenère
-- **Criptare Modernă**: AES-256 (CBC mode)
-- **Funcții Hash**: SHA-256
-- **Focus Principal**: One-Time Pad cu demonstrații de securitate perfectă și vulnerabilități
+Aplicația simulează mecanismul de criptare One-Time Pad:
+- Primește un mesaj text de la utilizator
+- Generează o cheie aleatorie de aceeași lungime folosind `crypto.getRandomValues()`
+- Criptează mesajul folosind operația XOR
+- Afișează rezultatele în multiple formate (text, ASCII, hex)
+- Verifică că decriptarea produce mesajul original
 
 ## Funcționalități
 
-### One-Time Pad (OTP)
-- Criptare/decriptare cu cheie generată automat
-- Generare cheie criptografic securizată (crypto/rand)
-- Demonstrație interactivă a pericolului reutilizării cheii
-- Vizualizarea operației XOR
+### Criptare OTP
+- **Input mesaj**: Introducerea unui text de criptat
+- **Generare cheie**: Cheie aleatorie criptografic securizată
+- **Criptare XOR**: Aplicarea operației XOR între mesaj și cheie
+- **Decriptare automată**: Verificarea că XOR-ul invers produce mesajul original
 
-### Cifrul Caesar
-- Criptare/decriptare cu deplasare configurabilă (0-25)
-- Slider interactiv pentru selectarea deplasării
-- **Atac brute-force** - afișează toate cele 25 de variante posibile
+### Afișare Rezultate
+- **Mesaj original**: text, coduri ASCII, hexazecimal
+- **Cheie OTP**: hexazecimal
+- **Mesaj criptat**: hexazecimal
+- **Mesaj decriptat**: text, coduri ASCII, hexazecimal
+- **Verificare**: Confirmarea că decriptarea este identică cu originalul
 
-### Cifrul Vigenère
-- Criptare/decriptare cu cuvânt-cheie
-- Tabel Vigenère interactiv generat automat
-- Explicații teoretice despre vulnerabilități
-
-### AES-256
-- Criptare în modul CBC
-- Padding PKCS7
-- IV aleatoriu pentru fiecare criptare
-- Suport pentru parole (derivare cheie cu SHA-256)
-
-### SHA-256 Hash
-- Hashing în timp real
-- **Demonstrație Efect Avalanșă** - vizualizare diferențe între hash-uri
-- Statistici despre biții diferiți
-
-### Secțiunea Teoretică
-- Formule matematice pentru fiecare algoritm
-- Tabel comparativ al algoritmilor
-- Explicații despre securitate și vulnerabilități
+### Salvare Fișiere (Opțional)
+- Salvare cheie în `otp_cheie.txt`
+- Salvare mesaj criptat în `mesaj_criptat.txt`
 
 ## Structura Proiectului
 
 ```
 OTP-Project/
-├── backend/
-│   └── main.go              # Server Go + API REST
-├── frontend/
-│   ├── index.html           # Interfața web
-│   ├── styles.css           # Stiluri CSS (dark theme)
-│   └── app.js               # Logica JavaScript
+├── frontend-react/
+│   ├── src/
+│   │   ├── App.jsx              # componenta principala
+│   │   └── components/
+│   │       └── OTPSimulator.jsx # simulatorul otp
+│   ├── package.json
+│   ├── tailwind.config.js
+│   └── vite.config.js
 ├── docs/
 │   ├── presentation/
-│   │   └── presentation.tex # Prezentare LaTeX (Beamer)
+│   │   └── presentation.tex     # prezentare latex beamer
 │   ├── report/
-│   │   └── project_report.tex # Raport LaTeX
-│   ├── output/              # PDF-uri generate
-│   └── Makefile             # Build pentru LaTeX
-├── OTP-main/
-│   └── Proiect Criptografie/
-│       └── OTP.go           # Implementarea originală CLI
+│   │   └── project_report.tex   # raport latex
+│   ├── BACKEND.md
+│   └── FRONTEND.md
 └── README.md
 ```
 
 ## Instalare și Rulare
 
 ### Cerințe
-- Go 1.21+ (pentru backend)
+- Node.js 18+ (pentru frontend React)
 - Browser web modern (Chrome, Firefox, Edge)
 - LaTeX (opțional, pentru compilare documente)
 
 ### Pornire Rapidă
 
 ```bash
-# Clonare repository
+# clonare repository
 git clone <repository-url>
 cd OTP-Project
 
-# Pornire server
-cd backend
-go run main.go
+# navigare in directorul frontend
+cd frontend-react
 
-# Deschide în browser
-# http://localhost:8080
+# instalare dependente
+npm install
+
+# pornire server development
+npm run dev
+
+# deschide in browser: http://localhost:5173
 ```
 
 ### Compilare Documentație LaTeX
@@ -107,146 +93,120 @@ go run main.go
 ```bash
 cd docs
 
-# Compilare toate documentele
-make all
+# compilare prezentare
+cd presentation
+pdflatex presentation.tex
 
-# Sau individual
-make presentation  # Generează prezentarea
-make report        # Generează raportul
-
-# Curățare fișiere auxiliare
-make clean
+# compilare raport
+cd ../report
+pdflatex project_report.tex
 ```
 
-## Algoritmi Implementați
+## Cum Funcționează OTP
 
-### 1. One-Time Pad (OTP)
+### Formula Matematică
 
-**Securitate**: Perfectă (teoretic)
-
-**Formula**:
 ```
 Criptare: C = M ⊕ K
 Decriptare: M = C ⊕ K
 ```
 
-**Condiții pentru securitate perfectă**:
-1. Cheia trebuie să fie complet aleatorie
-2. Cheia trebuie să aibă lungimea mesajului
-3. Cheia nu trebuie refolosită niciodată
-4. Cheia trebuie păstrată secretă
+unde:
+- M = mesajul original (plaintext)
+- K = cheia aleatorie
+- C = mesajul criptat (ciphertext)
+- ⊕ = operația XOR
 
-### 2. Cifrul Caesar
+### Condiții pentru Securitate Perfectă
 
-**Securitate**: Foarte slabă (25 chei posibile)
+1. **Aleatorietate**: Cheia trebuie să fie complet aleatorie (CSPRNG)
+2. **Lungime**: Cheia trebuie să aibă lungimea mesajului
+3. **Utilizare unică**: Cheia nu trebuie refolosită niciodată
+4. **Secret**: Cheia trebuie păstrată secretă
 
-**Formula**:
+### Exemplu
+
 ```
-Criptare: E(x) = (x + k) mod 26
-Decriptare: D(x) = (x - k) mod 26
+Mesaj:    "ABC"
+ASCII:    65 66 67
+Hex:      41 42 43
+
+Cheie:    (random)
+Hex:      A7 3F 82
+
+Criptat:  mesaj XOR cheie
+Hex:      E6 7D C1
+
+Decriptat: criptat XOR cheie = mesaj original
 ```
 
-### 3. Cifrul Vigenère
+### Operația XOR
 
-**Securitate**: Moderată (vulnerabil la atacuri Kasiski/Friedman)
+| A | B | A ⊕ B |
+|---|---|-------|
+| 0 | 0 | 0     |
+| 0 | 1 | 1     |
+| 1 | 0 | 1     |
+| 1 | 1 | 0     |
 
-**Formula**:
-```
-Criptare: Ci = (Mi + Ki mod |K|) mod 26
-Decriptare: Mi = (Ci - Ki mod |K| + 26) mod 26
-```
-
-### 4. AES-256
-
-**Securitate**: Foarte puternică
-
-**Caracteristici**:
-- Lungime cheie: 256 biți
-- Dimensiune bloc: 128 biți
-- Număr runde: 14
-- Mod implementat: CBC cu PKCS7 padding
-
-### 5. SHA-256
-
-**Tip**: Funcție hash criptografică
-
-**Proprietăți**:
-- Output: 256 biți (64 caractere hex)
-- Determinism, eficiență
-- Rezistență la preimage și coliziuni
-- Efect avalanșă
+**Proprietăți importante:**
+- `A ⊕ A = 0` (auto-inversă)
+- `A ⊕ 0 = A` (element neutru)
+- `(A ⊕ B) ⊕ B = A` (reversibilă)
 
 ## Documentație
 
-### Prezentare (PowerPoint Alternative)
-- Format: LaTeX Beamer
-- Locație: `docs/presentation/presentation.tex`
-- Output: `docs/output/presentation.pdf`
-- Durată estimată: ~10 minute
+### Raport LaTeX
+- **Locație**: `docs/report/project_report.tex`
+- **Conținut**: Teorie OTP, implementare, formule matematice, concluzii
 
-### Raport (Word Alternative)
-- Format: LaTeX Article
-- Locație: `docs/report/project_report.tex`
-- Output: `docs/output/project_report.pdf`
-- Conținut: Teorie completă + implementare + concluzii
+### Prezentare LaTeX (Beamer)
+- **Locație**: `docs/presentation/presentation.tex`
+- **Durată**: ~10 minute
+- **Conținut**: Slide-uri despre OTP, XOR, implementare
 
-## API Endpoints
-
-| Endpoint | Metodă | Descriere |
-|----------|--------|-----------|
-| `/api/otp` | POST | Criptare/Decriptare OTP |
-| `/api/caesar` | POST | Cifrul Caesar |
-| `/api/vigenere` | POST | Cifrul Vigenère |
-| `/api/aes` | POST | Criptare AES-256 CBC |
-| `/api/hash` | POST | Hash SHA-256 |
-| `/api/xor-analysis` | POST | Demonstrație key reuse |
-
-### Exemplu Request OTP
-
-```json
-// Criptare
-POST /api/otp
-{
-    "message": "Hello World",
-    "action": "encrypt"
-}
-
-// Response
-{
-    "result": "a5b3c2d1e0f9...",
-    "key": "1a2b3c4d5e6f..."
-}
-```
+### Documentație Cod
+- **Frontend**: `docs/FRONTEND.md`
 
 ## Tehnologii
 
-- **Backend**: Go (Golang)
-  - `crypto/rand` - generare numere aleatoare securizate
-  - `crypto/aes` - implementare AES
-  - `crypto/sha256` - funcție hash
-  - `net/http` - server HTTP
+### Frontend
+- **React 19** - framework JavaScript modern
+- **Tailwind CSS** - framework CSS pentru stilizare
+- **Vite** - build tool rapid
+- **Web Crypto API** - `crypto.getRandomValues()` pentru generare cheie
 
-- **Frontend**: HTML5, CSS3, JavaScript
-  - Web Crypto API pentru hashing client-side
-  - Fetch API pentru comunicare REST
-  - CSS Variables pentru tematizare
+### Documentație
+- **LaTeX** - raport și prezentare
+- **Beamer** - template pentru prezentare
 
-- **Documentație**: LaTeX
-  - Beamer pentru prezentări
-  - Article pentru rapoarte
+## De Ce OTP?
+
+One-Time Pad este special pentru că:
+
+| Aspect | OTP |
+|--------|-----|
+| Securitate | Perfectă (demonstrată matematic) |
+| Complexitate | Simplă (doar XOR) |
+| Viteză | Foarte rapidă |
+| Practică | Limitată (problema distribuției cheilor) |
+
+### Avantaje
+- Imposibil de spart dacă respectă condițiile
+- Nu necesită putere de calcul mare
+- Algoritm simplu și elegant
+
+### Dezavantaje
+- Cheia trebuie să fie la fel de lungă ca mesajul
+- Fiecare cheie se folosește o singură dată
+- Problema distribuției securizate a cheilor
 
 ## Bibliografie
 
 1. Shannon, C. E. (1949). "Communication Theory of Secrecy Systems"
 2. Schneier, B. (2015). "Applied Cryptography"
-3. Ferguson, N., Schneier, B. (2010). "Cryptography Engineering"
-4. NIST FIPS 197 - AES Standard
-5. NIST FIPS 180-4 - SHA Standard
+3. MDN Web Docs: Crypto.getRandomValues()
 
 ## Autor
 
-Proiect realizat pentru cursul de Criptografie și Securitatea Informațiilor.
-
-## Licență
-
-Acest proiect este destinat exclusiv scopurilor educaționale.
+Proiect realizat pentru cursul de Criptografie.

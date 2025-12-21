@@ -1,48 +1,36 @@
-# documentatie frontend react
+# documentatie frontend react - simulare otp
 
-documentatia pentru aplicatia frontend react 19 cu algoritmi criptografici.
+documentatia pentru aplicatia frontend react 19 care simuleaza mecanismul one-time pad.
 
 ## cuprins
 
 - [prezentare generala](#prezentare-generala)
-- [tehnologii si features](#tehnologii-si-features)
+- [tehnologii folosite](#tehnologii-folosite)
 - [structura proiectului](#structura-proiectului)
 - [instalare si rulare](#instalare-si-rulare)
-- [componente](#componente)
-- [hook-uri custom](#hook-uri-custom)
-- [context api](#context-api)
-- [servicii api](#servicii-api)
-- [stiluri css](#stiluri-css)
-- [react compiler](#react-compiler)
+- [componenta otpsimulator](#componenta-otpsimulator)
+- [implementare otp](#implementare-otp)
+- [formate de afisare](#formate-de-afisare)
 
 ## prezentare generala
 
-frontend-ul e o aplicatie react 19 care demonstreaza algoritmii criptografici. am folosit cele mai noi features din react inclusiv react compiler pentru optimizari automate.
+frontend-ul e o aplicatie react 19 care simuleaza criptarea one-time pad. totul se face client-side folosind web crypto api pentru generarea cheilor.
 
 ### ce face aplicatia
 
-- **otp** - criptare/decriptare one-time pad + demo vulnerabilitate key reuse
-- **caesar** - cifrul caesar cu brute force
-- **vigenere** - cifrul vigenere cu tabela interactiva
-- **aes** - criptare aes-256
-- **hash** - sha-256 cu demo efect avalansa
-- **teorie** - explicatii si comparatii
+1. primeste un mesaj text de la utilizator
+2. genereaza cheie aleatorie de aceeasi lungime cu `crypto.getRandomValues()`
+3. cripteaza cu xor intre mesaj si cheie
+4. afiseaza: mesaj original (text, ascii, hex), cheie (hex), criptat (hex), decriptat
+5. verifica ca decriptarea e identica cu originalul
+6. optional: salveaza cheie si mesaj criptat in fisiere
 
-## tehnologii si features
+## tehnologii folosite
 
-### react 19 features folosite
-
-1. **useActionState** - pentru form actions (inlocuieste useFormState)
-2. **useTransition** - pentru tranzitii smooth la operatii async
-3. **react compiler** - memoizare automata (nu mai trebuie useMemo/useCallback manual)
-4. **memo()** - pentru componentele care nu au nevoie de re-render
-5. **forwardRef** - pentru a pasa ref-uri la componente
-
-### alte tehnologii
-
+- **react 19** - framework javascript
+- **tailwind css** - framework css pentru stilizare
 - **vite** - bundler rapid pentru development
-- **css variables** - pentru theming
-- **web crypto api** - pentru hashing client-side
+- **web crypto api** - `crypto.getRandomValues()` pentru generare cheie securizata
 
 ## structura proiectului
 
@@ -50,32 +38,14 @@ frontend-ul e o aplicatie react 19 care demonstreaza algoritmii criptografici. a
 frontend-react/
 ├── index.html              # html principal
 ├── package.json            # dependente npm
-├── vite.config.js          # configurare vite + react compiler
+├── tailwind.config.js      # configurare tailwind
+├── vite.config.js          # configurare vite
 └── src/
     ├── main.jsx            # punct de intrare
     ├── App.jsx             # componenta principala
-    ├── index.css           # stiluri globale
-    ├── components/
-    │   ├── Navbar.jsx      # navigare
-    │   ├── Hero.jsx        # hero section
-    │   ├── Footer.jsx      # footer
-    │   ├── OTPSection.jsx  # sectiunea otp
-    │   ├── CaesarSection.jsx
-    │   ├── VigenereSection.jsx
-    │   ├── AESSection.jsx
-    │   ├── HashSection.jsx
-    │   ├── TheorySection.jsx
-    │   └── common/
-    │       ├── Button.jsx  # buton reutilizabil
-    │       ├── ResultBox.jsx
-    │       └── index.js    # exporturi
-    ├── hooks/
-    │   └── useCrypto.js    # hook-uri pentru crypto
-    ├── services/
-    │   └── api.js          # comunicare cu backend
-    ├── context/
-    │   └── AppContext.jsx  # state global
-    └── utils/              # functii utilitare
+    ├── index.css           # stiluri globale + tailwind
+    └── components/
+        └── OTPSimulator.jsx  # simulatorul otp
 ```
 
 ## instalare si rulare
@@ -94,421 +64,280 @@ npm run dev
 npm run build
 ```
 
-**nota:** trebuie sa ruleze si backend-ul pe port 8080 ca sa functioneze api-ul!
+serverul porneste pe `http://localhost:5173`
 
-## componente
+## componenta otpsimulator
 
-### App.jsx
-
-componenta principala care pune totul cap la cap:
+componenta principala care face toata treaba:
 
 ```jsx
-function App() {
+// importuri
+import { useState, useCallback } from 'react'
+
+function OTPSimulator() {
+  const [message, setMessage] = useState('')
+  const [results, setResults] = useState(null)
+
+  // functie pentru criptare
+  const encrypt = useCallback(() => {
+    // ... logica de criptare
+  }, [message])
+
   return (
-    <AppProvider>
-      <div className="app">
-        <Navbar />
-        <MainContent />
-        <Footer />
-      </div>
-    </AppProvider>
+    // ... jsx
   )
 }
 ```
 
-### OTPSection.jsx
-
-sectiunea pentru one-time pad foloseste `useActionState` din react 19:
+### state-ul componentei
 
 ```jsx
-// useActionState e nou in react 19
-const [encryptState, encryptAction, isEncrypting] = useActionState(
-  async (prevState, formData) => {
-    const msg = formData.get('message')
-    if (!msg) {
-      return { error: 'introdu un mesaj!' }
-    }
+const [message, setMessage] = useState('')      // mesajul introdus de user
+const [results, setResults] = useState(null)    // rezultatele criptarii
+```
 
-    const result = await otpEncrypt(msg)
-    if (result.error) {
-      return { error: result.error }
-    }
+### structura results
 
-    return { result: result.result, key: result.key }
+```javascript
+results = {
+  original: {
+    text: 'ABC',           // mesajul original
+    bytes: Uint8Array,     // bytes
+    ascii: '65 66 67',     // coduri ascii
+    hex: '41 42 43'        // hexazecimal
   },
-  null
-)
-```
-
-### CaesarSection.jsx
-
-foloseste hook-ul custom `useLocalCaesar` pentru operatii locale (fara server):
-
-```jsx
-const { cipher, bruteForce } = useLocalCaesar()
-
-const handleBruteForce = useCallback(() => {
-  const results = bruteForce(message)
-  setBruteForceResults(results)
-}, [message, bruteForce])
-```
-
-### VigenereSection.jsx
-
-include tabela vigenere memoizata:
-
-```jsx
-const VigenereTable = memo(function VigenereTable() {
-  const tableData = useMemo(() => {
-    // generam tabela 26x26
-    const rows = []
-    // ...
-    return rows
-  }, [])
-
-  return (
-    <table className="vigenere-table">
-      {/* ... */}
-    </table>
-  )
-})
-```
-
-### HashSection.jsx
-
-demonstratie efectul avalansa cu comparatie vizuala:
-
-```jsx
-const AvalancheDemo = memo(function AvalancheDemo() {
-  const { comparison, compare } = useAvalancheDemo()
-
-  useEffect(() => {
-    compare(text1, text2)
-  }, [text1, text2, compare])
-
-  // afisam diferentele cu culori
-  const renderHashDiff = useCallback((hash1, hash2) => {
-    return hash1.split('').map((char, i) => {
-      const isDiff = char !== hash2[i]
-      return (
-        <span className={isDiff ? 'hash-diff' : 'hash-same'}>
-          {char}
-        </span>
-      )
-    })
-  }, [])
-})
-```
-
-### componente comune
-
-#### Button.jsx
-
-buton reutilizabil cu suport pentru loading:
-
-```jsx
-const Button = forwardRef(function Button(
-  { children, variant = 'primary', isLoading = false, disabled = false, ...props },
-  ref
-) {
-  return (
-    <button
-      ref={ref}
-      className={`btn btn-${variant}`}
-      disabled={disabled || isLoading}
-      {...props}
-    >
-      {isLoading && <span className="spinner" />}
-      {children}
-    </button>
-  )
-})
-```
-
-#### ResultBox.jsx
-
-afisare rezultate cu suport pentru copiere:
-
-```jsx
-function ResultBox({ label, value, type = 'normal', showCopy = false }) {
-  const handleCopy = useCallback(async () => {
-    await navigator.clipboard.writeText(value)
-    alert('copiat!')
-  }, [value])
-
-  return (
-    <div className="result-group">
-      <label>{label}</label>
-      <div className={`result-box ${type}`}>
-        {value || 'niciun rezultat...'}
-      </div>
-      {showCopy && value && (
-        <button onClick={handleCopy}>copiaza</button>
-      )}
-    </div>
-  )
+  key: {
+    bytes: Uint8Array,     // cheia generata
+    hex: 'A7 3F 82'        // hex
+  },
+  encrypted: {
+    bytes: Uint8Array,     // mesaj criptat
+    hex: 'E6 7D C1'        // hex
+  },
+  decrypted: {
+    text: 'ABC',           // mesaj decriptat
+    bytes: Uint8Array,
+    ascii: '65 66 67',
+    hex: '41 42 43'
+  },
+  isMatch: true            // verifica daca decriptarea = original
 }
 ```
 
-## hook-uri custom
+## implementare otp
 
-### useCrypto.js
+### generare cheie aleatorie
 
-hook-uri pentru operatii criptografice:
+folosim `crypto.getRandomValues()` care e echivalent cu `crypto/rand` din go:
 
-#### useCryptoOperation
-
-hook generic pentru operatii async cu loading state:
-
-```jsx
-export function useCryptoOperation() {
-  const [result, setResult] = useState(null)
-  const [error, setError] = useState(null)
-  const [isPending, startTransition] = useTransition()
-
-  const execute = useCallback(async (operation) => {
-    setError(null)
-    startTransition(async () => {
-      try {
-        const response = await operation()
-        if (response.error) {
-          setError(response.error)
-        } else {
-          setResult(response)
-        }
-      } catch (err) {
-        setError(err.message)
-      }
-    })
-  }, [])
-
-  return { result, error, isLoading: isPending, execute }
+```javascript
+// genereaza cheie aleatorie securizata
+const generateKey = (length) => {
+  const key = new Uint8Array(length)
+  crypto.getRandomValues(key)  // csprng - cryptographically secure
+  return key
 }
 ```
 
-#### useLocalHash
+**nota importanta:** `crypto.getRandomValues()` e criptografic securizat, spre deosebire de `Math.random()` care nu e!
 
-calculeaza hash sha-256 in browser cu web crypto api:
+### operatia xor
 
-```jsx
-export function useLocalHash() {
-  const [hash, setHash] = useState('')
-  const [isPending, startTransition] = useTransition()
-
-  const calculateHash = useCallback(async (text) => {
-    startTransition(async () => {
-      const encoder = new TextEncoder()
-      const data = encoder.encode(text)
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data)
-      const hashArray = Array.from(new Uint8Array(hashBuffer))
-      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
-      setHash(hashHex)
-    })
-  }, [])
-
-  return { hash, calculateHash, isCalculating: isPending }
-}
-```
-
-#### useLocalCaesar
-
-cifrul caesar implementat local:
-
-```jsx
-export function useLocalCaesar() {
-  const cipher = useMemo(() => {
-    return (text, shift, encrypt = true) => {
-      const actualShift = encrypt ? shift : -shift
-      const normalizedShift = ((actualShift % 26) + 26) % 26
-
-      return text.split('').map(char => {
-        if (char >= 'A' && char <= 'Z') {
-          const code = char.charCodeAt(0) - 65
-          const newCode = (code + normalizedShift) % 26
-          return String.fromCharCode(newCode + 65)
-        }
-        // ... similar pentru lowercase
-        return char
-      }).join('')
-    }
-  }, [])
-
-  const bruteForce = useCallback((text) => {
-    const results = []
-    for (let i = 0; i < 26; i++) {
-      results.push({ shift: i, result: cipher(text, i, false) })
-    }
-    return results
-  }, [cipher])
-
-  return { cipher, bruteForce }
-}
-```
-
-#### useAvalancheDemo
-
-compara doua hash-uri si calculeaza diferentele:
-
-```jsx
-export function useAvalancheDemo() {
-  const [comparison, setComparison] = useState(null)
-
-  const compare = useCallback(async (text1, text2) => {
-    // calculeaza ambele hash-uri
-    // numara bitii diferiti
-    // returneaza procentajul de diferenta
-  }, [])
-
-  return { comparison, compare }
-}
-```
-
-## context api
-
-### AppContext.jsx
-
-gestioneaza starea globala (sectiunea activa):
-
-```jsx
-const AppContext = createContext(null)
-
-export function AppProvider({ children }) {
-  const [activeSection, setActiveSection] = useState('otp')
-
-  const navigateTo = useCallback((sectionId) => {
-    setActiveSection(sectionId)
-    document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' })
-  }, [])
-
-  const value = useMemo(() => ({
-    activeSection,
-    navigateTo,
-    sections: SECTIONS
-  }), [activeSection, navigateTo])
-
-  return (
-    <AppContext.Provider value={value}>
-      {children}
-    </AppContext.Provider>
-  )
-}
-
-export function useApp() {
-  const context = useContext(AppContext)
-  if (!context) {
-    throw new Error('useApp trebuie folosit in AppProvider')
+```javascript
+// xor intre doua array-uri de bytes
+const xorBytes = (a, b) => {
+  const result = new Uint8Array(a.length)
+  for (let i = 0; i < a.length; i++) {
+    result[i] = a[i] ^ b[i]
   }
-  return context
+  return result
 }
 ```
 
-## servicii api
+### conversie text la bytes
 
-### api.js
+```javascript
+// text -> bytes (utf-8)
+const encoder = new TextEncoder()
+const messageBytes = encoder.encode(message)
 
-functii pentru comunicarea cu backend-ul:
+// bytes -> text
+const decoder = new TextDecoder()
+const text = decoder.decode(bytes)
+```
 
-```jsx
-const API_BASE = '/api'
+### conversie la hex
 
-async function postRequest(endpoint, data) {
-  try {
-    const response = await fetch(`${API_BASE}${endpoint}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    })
-    return await response.json()
-  } catch (error) {
-    return { error: 'nu s-a putut conecta la server' }
+```javascript
+// bytes -> hex string
+const bytesToHex = (bytes) => {
+  return Array.from(bytes)
+    .map(b => b.toString(16).padStart(2, '0').toUpperCase())
+    .join(' ')
+}
+```
+
+### conversie la ascii
+
+```javascript
+// bytes -> ascii codes
+const bytesToAscii = (bytes) => {
+  return Array.from(bytes)
+    .map(b => b.toString())
+    .join(' ')
+}
+```
+
+### flow complet de criptare
+
+```javascript
+const encrypt = useCallback(() => {
+  if (!message.trim()) return
+
+  // 1. convertim mesajul la bytes
+  const encoder = new TextEncoder()
+  const messageBytes = encoder.encode(message)
+
+  // 2. generam cheie aleatorie de aceeasi lungime
+  const keyBytes = new Uint8Array(messageBytes.length)
+  crypto.getRandomValues(keyBytes)
+
+  // 3. criptam cu xor
+  const encryptedBytes = new Uint8Array(messageBytes.length)
+  for (let i = 0; i < messageBytes.length; i++) {
+    encryptedBytes[i] = messageBytes[i] ^ keyBytes[i]
   }
-}
 
-export async function otpEncrypt(message) {
-  return postRequest('/otp', { message, action: 'encrypt' })
-}
+  // 4. decriptam (pt verificare)
+  const decryptedBytes = new Uint8Array(encryptedBytes.length)
+  for (let i = 0; i < encryptedBytes.length; i++) {
+    decryptedBytes[i] = encryptedBytes[i] ^ keyBytes[i]
+  }
 
-export async function otpDecrypt(message, key) {
-  return postRequest('/otp', { message, key, action: 'decrypt' })
-}
+  // 5. verificam ca decriptarea = original
+  const decoder = new TextDecoder()
+  const decryptedText = decoder.decode(decryptedBytes)
+  const isMatch = decryptedText === message
 
-// ... alte functii pentru fiecare endpoint
+  // 6. setam rezultatele
+  setResults({
+    original: {
+      text: message,
+      bytes: messageBytes,
+      ascii: bytesToAscii(messageBytes),
+      hex: bytesToHex(messageBytes)
+    },
+    key: {
+      bytes: keyBytes,
+      hex: bytesToHex(keyBytes)
+    },
+    encrypted: {
+      bytes: encryptedBytes,
+      hex: bytesToHex(encryptedBytes)
+    },
+    decrypted: {
+      text: decryptedText,
+      bytes: decryptedBytes,
+      ascii: bytesToAscii(decryptedBytes),
+      hex: bytesToHex(decryptedBytes)
+    },
+    isMatch
+  })
+}, [message])
 ```
 
-## stiluri css
+## formate de afisare
 
-folosim css variables pentru theming:
+aplicatia afiseaza rezultatele in 3 formate:
 
-```css
-:root {
-  --primary-color: #6366f1;
-  --bg-primary: #0f172a;
-  --text-primary: #f8fafc;
-  /* ... */
-}
+| format | descriere | exemplu pentru "ABC" |
+|--------|-----------|---------------------|
+| text | caracterele originale | ABC |
+| ascii | coduri ascii (decimal) | 65 66 67 |
+| hex | valori hexazecimale | 41 42 43 |
+
+### de ce multiple formate?
+
+1. **text** - pentru intelegere umana
+2. **ascii** - pentru a vedea valorile numerice ale caracterelor
+3. **hex** - standard in criptografie, mai compact decat ascii
+
+## salvare fisiere
+
+aplicatia permite salvarea cheii si mesajului criptat in fisiere separate:
+
+```javascript
+// functie pentru download fisier
+const downloadFile = useCallback((content, filename) => {
+  const blob = new Blob([content], { type: 'text/plain' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}, [])
+
+// salvare cheie
+const saveKey = useCallback(() => {
+  if (!results) return
+  const content = `OTP KEY (hex)\n${results.key.hex}\n\nLungime: ${results.key.bytes.length} bytes`
+  downloadFile(content, 'otp_cheie.txt')
+}, [results, downloadFile])
+
+// salvare mesaj criptat
+const saveEncrypted = useCallback(() => {
+  if (!results) return
+  const content = `MESAJ CRIPTAT (hex)\n${results.encrypted.hex}\n\nMesaj original: "${results.original.text}"\nLungime: ${results.encrypted.bytes.length} bytes`
+  downloadFile(content, 'mesaj_criptat.txt')
+}, [results, downloadFile])
 ```
 
-### clase principale
+## stilizare cu tailwind
 
-- `.navbar` - bara de navigare fixa
-- `.crypto-section` - sectiune pentru un algoritm
-- `.crypto-card` - card cu continut
-- `.btn` - buton cu variante (primary, secondary, accent)
-- `.result-box` - afisare rezultate
-- `.vigenere-table` - tabela interactiva
-
-## react compiler
-
-react compiler e o chestie noua din react 19 care face memoizare automata.
-
-### configurare in vite.config.js
+folosim tailwind css pentru stilizare:
 
 ```jsx
-import react from '@vitejs/plugin-react'
-
-const ReactCompilerConfig = {
-  target: '19'
-}
-
-export default defineConfig({
-  plugins: [
-    react({
-      babel: {
-        plugins: [
-          ['babel-plugin-react-compiler', ReactCompilerConfig]
-        ]
-      }
-    })
-  ]
-})
+// exemplu de clase tailwind
+<div className="min-h-screen bg-slate-950 text-slate-100">
+  <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <h1 className="text-4xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
+      one-time pad simulator
+    </h1>
+  </div>
+</div>
 ```
 
-### ce face react compiler
+### clase principale folosite
 
-1. **memoizare automata** - nu mai trebuie sa punem useMemo si useCallback manual
-2. **optimizari la build** - cod mai mic si mai rapid
-3. **detectare dependente** - compilatorul stie ce sa memoizeze
+- `bg-slate-950` - fundal inchis
+- `text-slate-100` - text deschis
+- `from-emerald-400 to-cyan-400` - gradient pentru titlu
+- `rounded-lg` - colturi rotunjite
+- `p-4`, `px-4`, `py-8` - padding
+- `space-y-4` - spatiu vertical intre elemente
 
-### de ce tot folosim memo() si useCallback()
+## verificare securitate
 
-chiar daca react compiler face memoizare automata, tot le-am pus manual pentru:
-1. sa fim siguri ca functioneaza corect
-2. sa fie clar ce intentionam sa optimizam
-3. pentru compatibilitate cu versiuni mai vechi
+aplicatia verifica automat ca decriptarea produce mesajul original:
 
-## performanta
+```jsx
+{results.isMatch ? (
+  <div className="text-emerald-400">
+    ✓ decriptarea este identica cu mesajul original
+  </div>
+) : (
+  <div className="text-red-400">
+    ✗ eroare - decriptarea nu corespunde
+  </div>
+)}
+```
 
-### optimizari facute
+## note importante
 
-1. **memo()** pe componente care nu se schimba des (Navbar, Footer, VigenereTable)
-2. **useCallback()** pentru handlere ca sa nu se recreeze la fiecare render
-3. **useMemo()** pentru date calculate (tabela vigenere)
-4. **useTransition()** pentru operatii async fara blocking
-5. **lazy loading** - ar putea fi adaugat pentru sectiuni
-
-### ce ar mai putea fi imbunatatit
-
-- code splitting cu React.lazy()
-- virtualizare pentru lista brute force
-- service worker pentru caching
-- web workers pentru operatii grele
+1. **crypto.getRandomValues()** e criptografic securizat (csprng)
+2. **xor e reversibil** - aceeasi operatie pentru criptare si decriptare
+3. **cheia trebuie sa fie unica** - "one-time" inseamna o singura utilizare
+4. **lungimea cheii = lungimea mesajului** - conditie obligatorie pentru otp
