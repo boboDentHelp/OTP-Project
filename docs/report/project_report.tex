@@ -342,7 +342,7 @@ Decriptat:    01000001 = 'A'
 
 \subsection{Arhitectura}
 
-Aplicația este construită folosind o arhitectură client-side (browser):
+Aplicația este construită folosind o arhitectură client-server:
 
 \begin{figure}[H]
 \centering
@@ -351,9 +351,9 @@ Aplicația este construită folosind o arhitectură client-side (browser):
     box/.style={draw, rectangle, rounded corners, minimum width=3cm, minimum height=1cm}
 ]
     \node[box, fill=green!30] (frontend) {Frontend\\React 19};
-    \node[box, fill=blue!30, right of=frontend, xshift=3cm] (crypto) {Web Crypto API\\(crypto.getRandomValues)};
+    \node[box, fill=blue!30, right of=frontend, xshift=3cm] (backend) {Backend Go\\crypto/rand};
 
-    \draw[->, thick] (frontend) -- node[above] {Generare cheie} (crypto);
+    \draw[->, thick, <->] (frontend) -- node[above] {API REST} (backend);
 \end{tikzpicture}
 \caption{Arhitectura aplicației}
 \end{figure}
@@ -361,9 +361,13 @@ Aplicația este construită folosind o arhitectură client-side (browser):
 \subsection{Tehnologii Utilizate}
 
 \begin{itemize}
+    \item \textbf{Backend}: Go
+        \begin{itemize}
+            \item \texttt{crypto/rand} - generare cheie criptografic securizată (CSPRNG)
+            \item API REST pentru comunicare cu frontend
+        \end{itemize}
     \item \textbf{Frontend}: React 19 + Tailwind CSS
         \begin{itemize}
-            \item \texttt{crypto.getRandomValues()} - generare cheie aleatorie
             \item Hooks (useState, useCallback) pentru state management
             \item Tailwind CSS pentru stilizare
         \end{itemize}
@@ -373,11 +377,13 @@ Aplicația este construită folosind o arhitectură client-side (browser):
 
 \begin{verbatim}
 OTP-Project/
+├── backend/
+│   └── main.go               # Server Go cu crypto/rand
 ├── frontend-react/
 │   └── src/
-│       ├── App.jsx            # Componenta principală
+│       ├── App.jsx           # Componenta principală
 │       └── components/
-│           └── OTPSimulator.jsx  # Simulatorul OTP
+│           └── OTPSimulator.jsx  # Interfață utilizator
 ├── docs/
 │   ├── presentation/
 │   │   └── presentation.tex
@@ -386,36 +392,39 @@ OTP-Project/
 └── README.md
 \end{verbatim}
 
-\subsection{Implementare OTP în JavaScript}
+\subsection{Implementare OTP în Go}
 
-\begin{lstlisting}[language=JavaScript, caption=Funcții principale OTP]
-// generare cheie aleatorie cu crypto.getRandomValues
-const generateKey = (length) => {
-  const key = new Uint8Array(length)
-  crypto.getRandomValues(key)
-  return key
+\begin{lstlisting}[language=Go, caption=Funcții principale OTP în backend]
+// generare cheie aleatorie cu crypto/rand (CSPRNG)
+func generateKey(length int) ([]byte, error) {
+    key := make([]byte, length)
+    _, err := rand.Read(key)  // crypto/rand
+    return key, err
 }
 
 // operatia xor intre mesaj si cheie
-const xorEncrypt = (messageBytes, keyBytes) => {
-  const result = new Uint8Array(messageBytes.length)
-  for (let i = 0; i < messageBytes.length; i++) {
-    result[i] = messageBytes[i] ^ keyBytes[i]
-  }
-  return result
+func xorBytes(a, b []byte) []byte {
+    result := make([]byte, len(a))
+    for i := 0; i < len(a); i++ {
+        result[i] = a[i] ^ b[i]
+    }
+    return result
 }
 
 // conversie bytes la hex pentru afisare
-const bytesToHex = (bytes) => {
-  return Array.from(bytes)
-    .map(b => b.toString(16).padStart(2, '0').toUpperCase())
-    .join(' ')
+func bytesToHexSpaced(b []byte) string {
+    result := ""
+    for i, byte := range b {
+        if i > 0 { result += " " }
+        result += fmt.Sprintf("%02X", byte)
+    }
+    return result
 }
 \end{lstlisting}
 
 \textbf{Puncte importante în implementare:}
 \begin{itemize}
-    \item Folosirea \texttt{crypto.getRandomValues()} pentru generarea cheilor (echivalent cu \texttt{crypto/rand} din Go)
+    \item Folosirea \texttt{crypto/rand} din Go pentru generarea cheilor (CSPRNG)
     \item Verificarea lungimii cheii față de mesaj
     \item Afișarea în multiple formate (text, ASCII, hex)
 \end{itemize}
@@ -483,7 +492,7 @@ Acest proiect a realizat:
 \begin{enumerate}
     \item Implementarea funcțională a algoritmului One-Time Pad
     \item Demonstrarea practică a operației XOR pentru criptare/decriptare
-    \item Generare securizată a cheilor folosind \texttt{crypto.getRandomValues()}
+    \item Generare securizată a cheilor folosind \texttt{crypto/rand} din Go
     \item Afișarea mesajului în multiple formate (text, ASCII, hex)
     \item Verificarea automată că decriptarea produce mesajul original
     \item Interfață web modernă cu React 19 și Tailwind CSS
@@ -522,7 +531,7 @@ Nu necesită putere de calcul mare & Impractică pentru volume mari de date \\
 
 \begin{enumerate}
     \item \textbf{Nu implementați propriii algoritmi criptografici} în producție - folosiți biblioteci testate
-    \item \textbf{Generare securizată de chei}: folosiți CSPRNG (\texttt{crypto/rand}, \texttt{crypto.getRandomValues()})
+    \item \textbf{Generare securizată de chei}: folosiți CSPRNG (\texttt{crypto/rand} din Go)
     \item \textbf{Nu reutilizați cheile} - "One-Time" înseamnă exact o singură utilizare
     \item \textbf{Pentru aplicații practice}: folosiți AES-256-GCM sau ChaCha20-Poly1305
 \end{enumerate}

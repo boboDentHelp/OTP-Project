@@ -333,42 +333,42 @@
             box/.style={draw, rectangle, rounded corners, minimum width=3.5cm, minimum height=1.2cm, fill=blue!20}
         ]
             \node[box, fill=green!30] (frontend) {Frontend\\React 19 + Tailwind};
-            \node[box, fill=purple!30, right of=frontend, xshift=3cm] (crypto) {Web Crypto API\\crypto.getRandomValues()};
+            \node[box, fill=purple!30, right of=frontend, xshift=3cm] (backend) {Backend Go\\crypto/rand};
 
-            \draw[->, thick, <->] (frontend) -- node[above] {Generare cheie} (crypto);
+            \draw[->, thick, <->] (frontend) -- node[above] {API REST} (backend);
         \end{tikzpicture}
     \end{center}
 
     \vspace{0.5cm}
     \textbf{Tehnologii folosite:}
     \begin{itemize}
-        \item \textbf{React 19} - framework JavaScript modern
-        \item \textbf{Tailwind CSS} - framework CSS pentru stilizare
-        \item \textbf{crypto.getRandomValues()} - generare numere aleatoare criptografic securizate
+        \item \textbf{Backend Go} - server API pentru criptare
+        \item \textbf{crypto/rand} - generare cheie criptografic securizată (CSPRNG)
+        \item \textbf{React 19 + Tailwind} - interfață utilizator
         \item \textbf{Hooks} - useState, useCallback pentru state management
     \end{itemize}
 \end{frame}
 
-\begin{frame}[fragile]{Implementare OTP în JavaScript}
-\begin{lstlisting}[language=JavaScript, caption=Funcții principale OTP]
-// generare cheie aleatorie securizata
-const generateKey = (length) => {
-  const key = new Uint8Array(length)
-  crypto.getRandomValues(key)
-  return key
+\begin{frame}[fragile]{Implementare OTP în Go}
+\begin{lstlisting}[language=Go, caption=Funcții principale OTP în backend]
+// generare cheie aleatorie cu crypto/rand (CSPRNG)
+func generateKey(length int) ([]byte, error) {
+    key := make([]byte, length)
+    _, err := rand.Read(key)  // crypto/rand
+    return key, err
 }
 
 // operatia xor pentru criptare/decriptare
-const xorEncrypt = (messageBytes, keyBytes) => {
-  const result = new Uint8Array(messageBytes.length)
-  for (let i = 0; i < messageBytes.length; i++) {
-    result[i] = messageBytes[i] ^ keyBytes[i]
-  }
-  return result
+func xorBytes(a, b []byte) []byte {
+    result := make([]byte, len(a))
+    for i := 0; i < len(a); i++ {
+        result[i] = a[i] ^ b[i]
+    }
+    return result
 }
 \end{lstlisting}
 
-\textbf{Notă:} \texttt{crypto.getRandomValues()} este echivalent cu \texttt{crypto/rand} din Go.
+\textbf{Notă:} \texttt{crypto/rand} din Go este un CSPRNG (Cryptographically Secure PRNG).
 \end{frame}
 
 \begin{frame}{Funcționalități Implementate}
@@ -490,7 +490,7 @@ const xorEncrypt = (messageBytes, keyBytes) => {
     \textbf{Obiective îndeplinite:}
     \begin{enumerate}
         \item ✓ Implementare funcțională One-Time Pad
-        \item ✓ Generare cheie securizată (crypto.getRandomValues)
+        \item ✓ Generare cheie securizată (Go crypto/rand)
         \item ✓ Criptare și decriptare cu XOR
         \item ✓ Afișare în formate multiple (text, ASCII, hex)
         \item ✓ Verificare că decriptarea = originalul
@@ -515,7 +515,7 @@ const xorEncrypt = (messageBytes, keyBytes) => {
     \vspace{0.5cm}
     \textbf{Resurse online:}
     \begin{itemize}
-        \item MDN Web Docs: Crypto.getRandomValues()
+        \item Go Documentation: crypto/rand package
         \item React 19 Documentation
         \item Tailwind CSS Documentation
     \end{itemize}
