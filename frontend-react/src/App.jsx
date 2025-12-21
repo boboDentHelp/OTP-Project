@@ -10,7 +10,7 @@ function App() {
             one-time pad simulator
           </h1>
           <p className="text-slate-400 mt-2">
-            tema 2 - criptare si decriptare cu cheie otp
+            criptare si decriptare cu cheie otp
           </p>
         </header>
 
