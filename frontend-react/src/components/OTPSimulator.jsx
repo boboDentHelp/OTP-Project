@@ -1,53 +1,16 @@
 // componenta principala pentru simularea otp
 // cerinte:
 // - input mesaj de la utilizator
-// - generare cheie aleatoare (crypto.getRandomValues)
-// - criptare xor
+// - backend go genereaza cheie cu crypto/rand
+// - criptare xor pe backend
 // - afisare: mesaj original (ascii+hex), cheie (hex), criptat (hex), decriptat
 // - verificare daca decriptarea e identica cu originalul
 // - optional: salvare in fisiere
 
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback } from 'react'
 
-// converteste string in array de bytes
-function stringToBytes(str) {
-  return new TextEncoder().encode(str)
-}
-
-// converteste bytes in string
-function bytesToString(bytes) {
-  return new TextDecoder().decode(bytes)
-}
-
-// converteste bytes in hex string
-function bytesToHex(bytes) {
-  return Array.from(bytes)
-    .map(b => b.toString(16).padStart(2, '0').toUpperCase())
-    .join(' ')
-}
-
-// converteste string in reprezentare ascii (coduri)
-function stringToAscii(str) {
-  return Array.from(str)
-    .map(c => c.charCodeAt(0))
-    .join(' ')
-}
-
-// genereaza cheie aleatoare folosind crypto api (echivalent crypto/rand din go)
-function generateKey(length) {
-  const key = new Uint8Array(length)
-  crypto.getRandomValues(key)
-  return key
-}
-
-// functia xor - folosita si pentru criptare si decriptare
-function xorBytes(data, key) {
-  const result = new Uint8Array(data.length)
-  for (let i = 0; i < data.length; i++) {
-    result[i] = data[i] ^ key[i]
-  }
-  return result
-}
+// url-ul backend-ului go
+const API_URL = 'http://localhost:8080/api/otp'
 
 // componenta pentru afisarea unei sectiuni de date
 function DataSection({ title, icon, children, variant = 'default' }) {
@@ -91,55 +54,69 @@ function OTPSimulator() {
   // state pentru input
   const [message, setMessage] = useState('')
 
-  // state pentru rezultate
+  // state pentru rezultate de la backend
   const [results, setResults] = useState(null)
 
-  // procesare automata cand se schimba mesajul
-  const processOTP = useCallback(() => {
+  // state pentru loading si erori
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+
+  // apeleaza backend-ul go pentru criptare
+  const processOTP = useCallback(async () => {
     if (!message) {
       setResults(null)
       return
     }
 
-    // pasul 1: convertim mesajul in bytes
-    const messageBytes = stringToBytes(message)
+    setLoading(true)
+    setError(null)
 
-    // pasul 2: generam cheie aleatoare de aceeasi lungime
-    const keyBytes = generateKey(messageBytes.length)
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message }),
+      })
 
-    // pasul 3: criptam cu xor
-    const encryptedBytes = xorBytes(messageBytes, keyBytes)
+      const data = await response.json()
 
-    // pasul 4: decriptam cu xor (aplicam xor din nou)
-    const decryptedBytes = xorBytes(encryptedBytes, keyBytes)
-    const decryptedMessage = bytesToString(decryptedBytes)
+      if (data.error) {
+        setError(data.error)
+        setResults(null)
+        return
+      }
 
-    // pasul 5: verificam daca decriptarea e identica
-    const isValid = message === decryptedMessage
-
-    setResults({
-      original: {
-        text: message,
-        ascii: stringToAscii(message),
-        hex: bytesToHex(messageBytes),
-        bytes: messageBytes
-      },
-      key: {
-        hex: bytesToHex(keyBytes),
-        bytes: keyBytes
-      },
-      encrypted: {
-        hex: bytesToHex(encryptedBytes),
-        bytes: encryptedBytes
-      },
-      decrypted: {
-        text: decryptedMessage,
-        ascii: stringToAscii(decryptedMessage),
-        hex: bytesToHex(decryptedBytes),
-        bytes: decryptedBytes
-      },
-      isValid
-    })
+      // formatam rezultatele primite de la backend
+      setResults({
+        original: {
+          text: data.originalText,
+          ascii: data.originalAscii,
+          hex: data.originalHex,
+          length: data.originalText.length
+        },
+        key: {
+          hex: data.keyHex,
+          length: data.keyHex.split(' ').length
+        },
+        encrypted: {
+          hex: data.encryptedHex,
+          length: data.encryptedHex.split(' ').length
+        },
+        decrypted: {
+          text: data.decryptedText,
+          ascii: data.decryptedAscii,
+          hex: data.decryptedHex
+        },
+        isValid: data.isMatch
+      })
+    } catch (err) {
+      setError('nu s-a putut conecta la server. porneste backend-ul cu: cd backend && go run main.go')
+      setResults(null)
+    } finally {
+      setLoading(false)
+    }
   }, [message])
 
   // functie pentru salvare fisier individual
@@ -158,14 +135,14 @@ function OTPSimulator() {
   // salvare cheie
   const saveKey = useCallback(() => {
     if (!results) return
-    const content = `OTP KEY (hex)\n${results.key.hex}\n\nLungime: ${results.key.bytes.length} bytes`
+    const content = `OTP KEY (hex) - generat cu crypto/rand\n${results.key.hex}\n\nLungime: ${results.key.length} bytes`
     downloadFile(content, 'otp_cheie.txt')
   }, [results, downloadFile])
 
   // salvare mesaj criptat
   const saveEncrypted = useCallback(() => {
     if (!results) return
-    const content = `MESAJ CRIPTAT (hex)\n${results.encrypted.hex}\n\nMesaj original: "${results.original.text}"\nLungime: ${results.encrypted.bytes.length} bytes`
+    const content = `MESAJ CRIPTAT (hex)\n${results.encrypted.hex}\n\nMesaj original: "${results.original.text}"\nLungime: ${results.encrypted.length} bytes`
     downloadFile(content, 'mesaj_criptat.txt')
   }, [results, downloadFile])
 
@@ -174,7 +151,7 @@ function OTPSimulator() {
       {/* input mesaj */}
       <div className="bg-slate-900 rounded-xl border border-slate-700 p-6">
         <label className="block text-sm font-medium text-slate-300 mb-3">
-          introdu mesajul text simplu (string)
+          introdu mesajul de criptat
         </label>
         <textarea
           value={message}
@@ -188,14 +165,14 @@ function OTPSimulator() {
         <div className="flex gap-3 mt-4">
           <button
             onClick={processOTP}
-            disabled={!message}
+            disabled={!message || loading}
             className="flex-1 bg-gradient-to-r from-emerald-600 to-cyan-600
                        hover:from-emerald-500 hover:to-cyan-500 disabled:from-slate-700
                        disabled:to-slate-700 disabled:cursor-not-allowed px-6 py-3
                        rounded-lg font-medium transition-all duration-200
                        shadow-lg shadow-emerald-900/30"
           >
-            🔐 cripteaza / decripteaza
+            {loading ? '⏳ se proceseaza...' : '🔐 cripteaza cu backend go'}
           </button>
           {results && (
             <>
@@ -218,6 +195,14 @@ function OTPSimulator() {
         </div>
       </div>
 
+      {/* eroare */}
+      {error && (
+        <div className="bg-red-950/50 border border-red-700 rounded-xl p-4 text-red-400">
+          <p className="font-medium">eroare:</p>
+          <p className="text-sm mt-1">{error}</p>
+        </div>
+      )}
+
       {/* rezultate */}
       {results && (
         <div className="space-y-4">
@@ -227,15 +212,15 @@ function OTPSimulator() {
             <DataDisplay label="ascii (coduri)" value={results.original.ascii} variant="ascii" />
             <DataDisplay label="hex" value={results.original.hex} variant="hex" />
             <div className="mt-2 text-xs text-slate-500">
-              lungime: {results.original.bytes.length} bytes
+              lungime: {results.original.length} bytes
             </div>
           </DataSection>
 
           {/* cheie generata */}
-          <DataSection title="cheie otp generata (crypto/rand)" icon="🔑" variant="warning">
+          <DataSection title="cheie otp generata (go crypto/rand)" icon="🔑" variant="warning">
             <DataDisplay label="hex" value={results.key.hex} variant="hex" />
             <div className="mt-2 text-xs text-slate-500">
-              lungime: {results.key.bytes.length} bytes (egala cu mesajul)
+              lungime: {results.key.length} bytes (egala cu mesajul) - generata de backend cu crypto/rand
             </div>
           </DataSection>
 
@@ -243,7 +228,7 @@ function OTPSimulator() {
           <DataSection title="mesaj criptat (mesaj XOR cheie)" icon="🔒">
             <DataDisplay label="hex" value={results.encrypted.hex} variant="hex" />
             <div className="mt-2 text-xs text-slate-500">
-              lungime: {results.encrypted.bytes.length} bytes
+              lungime: {results.encrypted.length} bytes
             </div>
           </DataSection>
 
@@ -284,6 +269,15 @@ function OTPSimulator() {
             </div>
             <p className="text-xs text-slate-500 mt-2">
               proprietatea xor: (A ⊕ B) ⊕ B = A
+            </p>
+          </div>
+
+          {/* nota despre backend */}
+          <div className="bg-slate-900/50 rounded-xl border border-slate-800 p-4">
+            <h3 className="text-sm font-medium text-slate-400 mb-2">🖥️ backend go</h3>
+            <p className="text-xs text-slate-500">
+              cheia e generata pe server cu <code className="text-cyan-400">crypto/rand</code> (csprng).
+              operatiile xor se fac tot pe backend.
             </p>
           </div>
         </div>
