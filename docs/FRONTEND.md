@@ -1,6 +1,6 @@
 # documentatie frontend react - simulare otp
 
-documentatia pentru aplicatia frontend react 19 care simuleaza mecanismul one-time pad.
+documentatia pentru aplicatia frontend react 19 care afiseaza interfata pentru simulatorul otp.
 
 ## cuprins
 
@@ -9,28 +9,28 @@ documentatia pentru aplicatia frontend react 19 care simuleaza mecanismul one-ti
 - [structura proiectului](#structura-proiectului)
 - [instalare si rulare](#instalare-si-rulare)
 - [componenta otpsimulator](#componenta-otpsimulator)
-- [implementare otp](#implementare-otp)
-- [formate de afisare](#formate-de-afisare)
+- [comunicare cu backend](#comunicare-cu-backend)
 
 ## prezentare generala
 
-frontend-ul e o aplicatie react 19 care simuleaza criptarea one-time pad. totul se face client-side folosind web crypto api pentru generarea cheilor.
+frontend-ul e o aplicatie react 19 care ofera interfata pentru simulatorul otp. **toata logica criptografica se face in backend-ul go**.
 
-### ce face aplicatia
+### ce face frontend-ul
 
-1. primeste un mesaj text de la utilizator
-2. genereaza cheie aleatorie de aceeasi lungime cu `crypto.getRandomValues()`
-3. cripteaza cu xor intre mesaj si cheie
-4. afiseaza: mesaj original (text, ascii, hex), cheie (hex), criptat (hex), decriptat
-5. verifica ca decriptarea e identica cu originalul
-6. optional: salveaza cheie si mesaj criptat in fisiere
+1. primeste mesaj text de la utilizator
+2. trimite mesajul la backend-ul go (`POST /api/otp`)
+3. primeste rezultatele de la backend (cheie, criptat, decriptat)
+4. afiseaza rezultatele in formate diferite (text, ascii, hex)
+5. permite salvarea cheii si mesajului criptat in fisiere
+
+**nota importanta:** frontend-ul nu face criptare! doar afiseaza rezultatele primite de la backend.
 
 ## tehnologii folosite
 
 - **react 19** - framework javascript
 - **tailwind css** - framework css pentru stilizare
 - **vite** - bundler rapid pentru development
-- **web crypto api** - `crypto.getRandomValues()` pentru generare cheie securizata
+- **fetch api** - pentru comunicare cu backend-ul go
 
 ## structura proiectului
 
@@ -51,40 +51,48 @@ frontend-react/
 ## instalare si rulare
 
 ```bash
-# navigam in directorul frontend
+# 1. porneste backend-ul go mai intai!
+cd backend
+go run main.go
+
+# 2. apoi porneste frontend-ul
 cd frontend-react
-
-# instalam dependentele
 npm install
-
-# pornim serverul de development
 npm run dev
-
-# build pentru productie
-npm run build
 ```
 
-serverul porneste pe `http://localhost:5173`
+serverul frontend porneste pe `http://localhost:5173`
+backend-ul trebuie sa ruleze pe `http://localhost:8080`
 
 ## componenta otpsimulator
 
-componenta principala care face toata treaba:
+componenta principala care comunica cu backend-ul:
 
 ```jsx
-// importuri
 import { useState, useCallback } from 'react'
+
+// url-ul backend-ului go
+const API_URL = 'http://localhost:8080/api/otp'
 
 function OTPSimulator() {
   const [message, setMessage] = useState('')
   const [results, setResults] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
 
-  // functie pentru criptare
-  const encrypt = useCallback(() => {
-    // ... logica de criptare
+  // apeleaza backend-ul pentru criptare
+  const processOTP = useCallback(async () => {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message }),
+    })
+    const data = await response.json()
+    setResults(data)
   }, [message])
 
   return (
-    // ... jsx
+    // ... jsx pentru afisare
   )
 }
 ```
@@ -93,178 +101,95 @@ function OTPSimulator() {
 
 ```jsx
 const [message, setMessage] = useState('')      // mesajul introdus de user
-const [results, setResults] = useState(null)    // rezultatele criptarii
+const [results, setResults] = useState(null)    // rezultatele de la backend
+const [loading, setLoading] = useState(false)   // indicator loading
+const [error, setError] = useState(null)        // mesaj eroare
 ```
 
-### structura results
+### structura results (de la backend)
 
 ```javascript
 results = {
   original: {
     text: 'ABC',           // mesajul original
-    bytes: Uint8Array,     // bytes
     ascii: '65 66 67',     // coduri ascii
     hex: '41 42 43'        // hexazecimal
   },
   key: {
-    bytes: Uint8Array,     // cheia generata
-    hex: 'A7 3F 82'        // hex
+    hex: 'A7 3F 82'        // cheia generata de backend cu crypto/rand
   },
   encrypted: {
-    bytes: Uint8Array,     // mesaj criptat
-    hex: 'E6 7D C1'        // hex
+    hex: 'E6 7D C1'        // mesaj criptat
   },
   decrypted: {
     text: 'ABC',           // mesaj decriptat
-    bytes: Uint8Array,
     ascii: '65 66 67',
     hex: '41 42 43'
   },
-  isMatch: true            // verifica daca decriptarea = original
+  isValid: true            // verifica daca decriptarea = original
 }
 ```
 
-## implementare otp
+## comunicare cu backend
 
-### generare cheie aleatorie
-
-folosim `crypto.getRandomValues()` care e echivalent cu `crypto/rand` din go:
+### request
 
 ```javascript
-// genereaza cheie aleatorie securizata
-const generateKey = (length) => {
-  const key = new Uint8Array(length)
-  crypto.getRandomValues(key)  // csprng - cryptographically secure
-  return key
+const response = await fetch('http://localhost:8080/api/otp', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({ message: 'mesajul de criptat' }),
+})
+```
+
+### response de la backend
+
+```json
+{
+  "originalText": "mesajul",
+  "originalAscii": "109 101 115 97 106 117 108",
+  "originalHex": "6D 65 73 61 6A 75 6C",
+  "keyHex": "A7 3F 82 1B C9 D4 E5",
+  "encryptedHex": "CA 5A F1 7A A3 A1 89",
+  "decryptedText": "mesajul",
+  "decryptedAscii": "109 101 115 97 106 117 108",
+  "decryptedHex": "6D 65 73 61 6A 75 6C",
+  "isMatch": true
 }
 ```
 
-**nota importanta:** `crypto.getRandomValues()` e criptografic securizat, spre deosebire de `Math.random()` care nu e!
-
-### operatia xor
+### mapare raspuns backend -> state frontend
 
 ```javascript
-// xor intre doua array-uri de bytes
-const xorBytes = (a, b) => {
-  const result = new Uint8Array(a.length)
-  for (let i = 0; i < a.length; i++) {
-    result[i] = a[i] ^ b[i]
-  }
-  return result
-}
+setResults({
+  original: {
+    text: data.originalText,
+    ascii: data.originalAscii,
+    hex: data.originalHex,
+    length: data.originalText.length
+  },
+  key: {
+    hex: data.keyHex,
+    length: data.keyHex.split(' ').length
+  },
+  encrypted: {
+    hex: data.encryptedHex,
+    length: data.encryptedHex.split(' ').length
+  },
+  decrypted: {
+    text: data.decryptedText,
+    ascii: data.decryptedAscii,
+    hex: data.decryptedHex
+  },
+  isValid: data.isMatch
+})
 ```
-
-### conversie text la bytes
-
-```javascript
-// text -> bytes (utf-8)
-const encoder = new TextEncoder()
-const messageBytes = encoder.encode(message)
-
-// bytes -> text
-const decoder = new TextDecoder()
-const text = decoder.decode(bytes)
-```
-
-### conversie la hex
-
-```javascript
-// bytes -> hex string
-const bytesToHex = (bytes) => {
-  return Array.from(bytes)
-    .map(b => b.toString(16).padStart(2, '0').toUpperCase())
-    .join(' ')
-}
-```
-
-### conversie la ascii
-
-```javascript
-// bytes -> ascii codes
-const bytesToAscii = (bytes) => {
-  return Array.from(bytes)
-    .map(b => b.toString())
-    .join(' ')
-}
-```
-
-### flow complet de criptare
-
-```javascript
-const encrypt = useCallback(() => {
-  if (!message.trim()) return
-
-  // 1. convertim mesajul la bytes
-  const encoder = new TextEncoder()
-  const messageBytes = encoder.encode(message)
-
-  // 2. generam cheie aleatorie de aceeasi lungime
-  const keyBytes = new Uint8Array(messageBytes.length)
-  crypto.getRandomValues(keyBytes)
-
-  // 3. criptam cu xor
-  const encryptedBytes = new Uint8Array(messageBytes.length)
-  for (let i = 0; i < messageBytes.length; i++) {
-    encryptedBytes[i] = messageBytes[i] ^ keyBytes[i]
-  }
-
-  // 4. decriptam (pt verificare)
-  const decryptedBytes = new Uint8Array(encryptedBytes.length)
-  for (let i = 0; i < encryptedBytes.length; i++) {
-    decryptedBytes[i] = encryptedBytes[i] ^ keyBytes[i]
-  }
-
-  // 5. verificam ca decriptarea = original
-  const decoder = new TextDecoder()
-  const decryptedText = decoder.decode(decryptedBytes)
-  const isMatch = decryptedText === message
-
-  // 6. setam rezultatele
-  setResults({
-    original: {
-      text: message,
-      bytes: messageBytes,
-      ascii: bytesToAscii(messageBytes),
-      hex: bytesToHex(messageBytes)
-    },
-    key: {
-      bytes: keyBytes,
-      hex: bytesToHex(keyBytes)
-    },
-    encrypted: {
-      bytes: encryptedBytes,
-      hex: bytesToHex(encryptedBytes)
-    },
-    decrypted: {
-      text: decryptedText,
-      bytes: decryptedBytes,
-      ascii: bytesToAscii(decryptedBytes),
-      hex: bytesToHex(decryptedBytes)
-    },
-    isMatch
-  })
-}, [message])
-```
-
-## formate de afisare
-
-aplicatia afiseaza rezultatele in 3 formate:
-
-| format | descriere | exemplu pentru "ABC" |
-|--------|-----------|---------------------|
-| text | caracterele originale | ABC |
-| ascii | coduri ascii (decimal) | 65 66 67 |
-| hex | valori hexazecimale | 41 42 43 |
-
-### de ce multiple formate?
-
-1. **text** - pentru intelegere umana
-2. **ascii** - pentru a vedea valorile numerice ale caracterelor
-3. **hex** - standard in criptografie, mai compact decat ascii
 
 ## salvare fisiere
 
-aplicatia permite salvarea cheii si mesajului criptat in fisiere separate:
+frontend-ul permite salvarea cheii si mesajului criptat:
 
 ```javascript
 // functie pentru download fisier
@@ -283,15 +208,8 @@ const downloadFile = useCallback((content, filename) => {
 // salvare cheie
 const saveKey = useCallback(() => {
   if (!results) return
-  const content = `OTP KEY (hex)\n${results.key.hex}\n\nLungime: ${results.key.bytes.length} bytes`
+  const content = `OTP KEY (hex) - generat cu crypto/rand\n${results.key.hex}`
   downloadFile(content, 'otp_cheie.txt')
-}, [results, downloadFile])
-
-// salvare mesaj criptat
-const saveEncrypted = useCallback(() => {
-  if (!results) return
-  const content = `MESAJ CRIPTAT (hex)\n${results.encrypted.hex}\n\nMesaj original: "${results.original.text}"\nLungime: ${results.encrypted.bytes.length} bytes`
-  downloadFile(content, 'mesaj_criptat.txt')
 }, [results, downloadFile])
 ```
 
@@ -300,7 +218,6 @@ const saveEncrypted = useCallback(() => {
 folosim tailwind css pentru stilizare:
 
 ```jsx
-// exemplu de clase tailwind
 <div className="min-h-screen bg-slate-950 text-slate-100">
   <div className="container mx-auto px-4 py-8 max-w-4xl">
     <h1 className="text-4xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
@@ -310,34 +227,9 @@ folosim tailwind css pentru stilizare:
 </div>
 ```
 
-### clase principale folosite
-
-- `bg-slate-950` - fundal inchis
-- `text-slate-100` - text deschis
-- `from-emerald-400 to-cyan-400` - gradient pentru titlu
-- `rounded-lg` - colturi rotunjite
-- `p-4`, `px-4`, `py-8` - padding
-- `space-y-4` - spatiu vertical intre elemente
-
-## verificare securitate
-
-aplicatia verifica automat ca decriptarea produce mesajul original:
-
-```jsx
-{results.isMatch ? (
-  <div className="text-emerald-400">
-    ✓ decriptarea este identica cu mesajul original
-  </div>
-) : (
-  <div className="text-red-400">
-    ✗ eroare - decriptarea nu corespunde
-  </div>
-)}
-```
-
 ## note importante
 
-1. **crypto.getRandomValues()** e criptografic securizat (csprng)
-2. **xor e reversibil** - aceeasi operatie pentru criptare si decriptare
-3. **cheia trebuie sa fie unica** - "one-time" inseamna o singura utilizare
-4. **lungimea cheii = lungimea mesajului** - conditie obligatorie pentru otp
+1. **frontend-ul nu face criptare** - doar afiseaza rezultatele de la backend
+2. **backend-ul trebuie sa ruleze** - pe port 8080
+3. **cheia e generata de backend** - cu go crypto/rand (csprng)
+4. **cors e activat** - backend-ul permite requesturi de la frontend

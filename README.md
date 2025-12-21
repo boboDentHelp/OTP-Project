@@ -16,7 +16,7 @@ Proiect de criptografie care demonstrează implementarea algoritmului **One-Time
 
 Aplicația simulează mecanismul de criptare One-Time Pad:
 - Primește un mesaj text de la utilizator
-- Generează o cheie aleatorie de aceeași lungime folosind `crypto.getRandomValues()`
+- Backend-ul Go generează cheie aleatorie cu `crypto/rand` (CSPRNG)
 - Criptează mesajul folosind operația XOR
 - Afișează rezultatele în multiple formate (text, ASCII, hex)
 - Verifică că decriptarea produce mesajul original
@@ -173,11 +173,14 @@ Decriptat: criptat XOR cheie = mesaj original
 
 ## Tehnologii
 
+### Backend
+- **Go 1.21+** - server API
+- **crypto/rand** - generare cheie criptografic securizată (CSPRNG)
+
 ### Frontend
 - **React 19** - framework JavaScript modern
 - **Tailwind CSS** - framework CSS pentru stilizare
 - **Vite** - build tool rapid
-- **Web Crypto API** - `crypto.getRandomValues()` pentru generare cheie
 
 ### Documentație
 - **LaTeX** - raport și prezentare
@@ -208,7 +211,7 @@ One-Time Pad este special pentru că:
 
 1. Shannon, C. E. (1949). "Communication Theory of Secrecy Systems"
 2. Schneier, B. (2015). "Applied Cryptography"
-3. MDN Web Docs: Crypto.getRandomValues()
+3. Go Documentation: crypto/rand package
 
 ## Autor
 
